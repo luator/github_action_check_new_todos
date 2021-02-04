@@ -1,0 +1,23 @@
+name: "Check New TODOs"
+description: "Parse a git diff for added or modified TODOs."
+author: "Felix Widmaier (@luator)"
+inputs:
+    label:
+        description: "The 'TODO' label that is searched for."
+        required: true
+        default: "TODO"
+    base_ref:
+        description: "The base branch for the diff."
+        required: true
+        default: "origin/master"
+    head_ref:
+        description: "The head branch for the diff."
+        required: true
+        default: "HEAD"
+runs:
+    using: "docker"
+    image: "Dockerfile"
+    args:
+        - ${{ inputs.label }}
+        - ${{ inputs.base_ref }}
+        - ${{ inputs.head_ref }}
