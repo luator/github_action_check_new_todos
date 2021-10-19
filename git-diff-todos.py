@@ -41,7 +41,7 @@ def main():
         type=str,
         nargs="+",
         default=("TODO", "FIXME"),
-        help="List of labels that is searched for.  Default: %(defaults)s",
+        help="List of labels that is searched for.  Default: %(default)s",
     )
     arg_parser.add_argument(
         "--parsable-output",
