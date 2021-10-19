@@ -68,7 +68,8 @@ def main():
                 matches[file_diff.b_path][line_num] = line
             elif line.startswith("@@"):
                 # "@@ -199,8 +208,9 @@" --> 208
-                match = re.search(r"@@ -\d+,\d+ \+(\d+),\d+ @@", line)
+                # "---@@ -0,0 +1 @@" --> 1  // single line files
+                match = re.search(r"@@ -\d+,\d+ \+(\d+)(,\d+)? @@", line)
                 # Start with offset of -1 because the extracted number refers
                 # to the line following this one.
                 line_num = int(match.group(1)) - 1
