@@ -60,7 +60,10 @@ def main():
         line_num = 0
         for b_line in file_diff.diff.splitlines():
             line = b_line.decode("utf-8")
-            line_num += 1
+
+            if not line.startswith("-"):
+                line_num += 1
+
             if line.startswith("+") and any_in(args.label, line):
                 # remove the "+" and leading whitespaces
                 line = line[1:].strip()
