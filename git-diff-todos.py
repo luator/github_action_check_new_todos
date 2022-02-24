@@ -71,11 +71,17 @@ def main():
                 matches[file_diff.b_path][line_num] = line
             elif line.startswith("@@"):
                 # "@@ -199,8 +208,9 @@" --> 208
-                # "---@@ -0,0 +1 @@" --> 1  // single line files
-                match = re.search(r"@@ -\d+,\d+ \+(\d+)(,\d+)? @@", line)
-                # Start with offset of -1 because the extracted number refers
-                # to the line following this one.
-                line_num = int(match.group(1)) - 1
+                # "@@ -0,0 +1 @@" --> 1  // single line files
+                # "@@ -1 +1,60 @@" --> 1  // adding lines to single-line file
+                match = re.search(r"@@ -\d+(,\d+)? \+(\d+)(,\d+)? @@", line)
+
+                if not match:
+                    print("ERROR: Failed to extract line number from '%s'" % line)
+                    return 2
+                else:
+                    # Start with offset of -1 because the extracted number refers
+                    # to the line following this one.
+                    line_num = int(match.group(2)) - 1
 
     if args.parsable_output:
         for filename, lines in matches.items():
