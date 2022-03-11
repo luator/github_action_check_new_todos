@@ -36,7 +36,7 @@ Example workflow checking for "FIXME" in pull requests.
         - uses: actions/checkout@v2
         - run: git fetch origin ${GITHUB_BASE_REF}
         - name: Check for FIXMEs
-          uses: luator/github_action_check_new_todos@master
+          uses: luator/github_action_check_new_todos@v1
           with:
               label: FIXME
               base_ref: origin/${{ github.base_ref }}
