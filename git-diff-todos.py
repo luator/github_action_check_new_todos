@@ -4,13 +4,53 @@ import argparse
 import collections
 import re
 import sys
+import typing as t
 
 import git  # pip install gitpython
 
 
-def any_in(a, b):
+class ParseError(RuntimeError):
+    pass
+
+
+def any_in(a: t.Iterable[str], b: str) -> bool:
     """Checks if 'a in b' is true for any element of a."""
     return any(x in b for x in a)
+
+
+def parse_diff(
+    diff: git.DiffIndex, labels: t.Iterable[str]
+) -> t.DefaultDict[str, t.Dict[int, str]]:
+    matches: t.DefaultDict[str, t.Dict[int, str]] = collections.defaultdict(dict)
+
+    for file_diff in diff:
+        line_num = 0
+        for b_line in file_diff.diff.splitlines():
+            line = b_line.decode("utf-8")
+
+            if not line.startswith("-"):
+                line_num += 1
+
+            if line.startswith("+") and any_in(labels, line):
+                # remove the "+" and leading whitespaces
+                line = line[1:].strip()
+
+                matches[file_diff.b_path][line_num] = line
+            elif line.startswith("@@"):
+                # "@@ -199,8 +208,9 @@" --> 208
+                # "@@ -0,0 +1 @@" --> 1  // single line files
+                # "@@ -1 +1,60 @@" --> 1  // adding lines to single-line file
+                match = re.search(r"@@ -\d+(,\d+)? \+(\d+)(,\d+)? @@", line)
+
+                if not match:
+                    msg = f"Failed to extract line number from '{line}'"
+                    raise ParseError(msg)
+                else:
+                    # Start with offset of -1 because the extracted number refers
+                    # to the line following this one.
+                    line_num = int(match.group(2)) - 1
+
+    return matches
 
 
 def main():
@@ -54,34 +94,11 @@ def main():
     commit = repo.commit(args.old)
     diff = commit.diff(args.new, create_patch=True)
 
-    matches = collections.defaultdict(dict)
-
-    for file_diff in diff:
-        line_num = 0
-        for b_line in file_diff.diff.splitlines():
-            line = b_line.decode("utf-8")
-
-            if not line.startswith("-"):
-                line_num += 1
-
-            if line.startswith("+") and any_in(args.label, line):
-                # remove the "+" and leading whitespaces
-                line = line[1:].strip()
-
-                matches[file_diff.b_path][line_num] = line
-            elif line.startswith("@@"):
-                # "@@ -199,8 +208,9 @@" --> 208
-                # "@@ -0,0 +1 @@" --> 1  // single line files
-                # "@@ -1 +1,60 @@" --> 1  // adding lines to single-line file
-                match = re.search(r"@@ -\d+(,\d+)? \+(\d+)(,\d+)? @@", line)
-
-                if not match:
-                    print("ERROR: Failed to extract line number from '%s'" % line)
-                    return 2
-                else:
-                    # Start with offset of -1 because the extracted number refers
-                    # to the line following this one.
-                    line_num = int(match.group(2)) - 1
+    try:
+        matches = parse_diff(diff, args.label)
+    except ParseError as e:
+        print(f"Error: {e}")
+        return 2
 
     if args.parsable_output:
         for filename, lines in matches.items():
