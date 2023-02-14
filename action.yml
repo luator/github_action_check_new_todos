@@ -19,12 +19,26 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - uses: actions/setup-python@v4
+    - name: Fetch base branch (needed for diff)
+      run: git fetch origin ${{ inputs.base_ref }}
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
       with:
         python-version: '3.10'  
+
     - name: Install Dependencies
       run: pip install -r requirements.txt
       shell: bash
+
+    - name: Add Matcher
+      shell: bash
+      run: |
+        echo "::add-matcher::${{ github.action_path }}/git-diff-todos-problem-matcher.json"
+
     - name: Run git-diff-todos
-      run:
-        ./entrypoint.sh "${{ inputs.label }}" "${{ inputs.base_ref }}" "${{ inputs.head_ref }}"
+      run: |
+        echo "Parse diff ${{ inputs.base_ref }}..${{ inputs.head_ref }} for ${{ inputs.label }}."
+        echo "-----------------------------------------------------------"
+        python3 /git-diff-todos.py --parsable-output \
+          -o ${{ inputs.base_ref }} -n ${{ inputs.head_ref }} -l "${{ inputs.label }}" 
