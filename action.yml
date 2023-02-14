@@ -40,7 +40,6 @@ runs:
     - name: Run git-diff-todos
       shell: bash
       run: |
-        echo "Parse diff ${{ inputs.base_ref }}..${{ inputs.head_ref }} for ${{ inputs.label }}."
-        echo "-----------------------------------------------------------"
+        echo "::notice::Parse diff ${{ inputs.base_ref }}..${{ inputs.head_ref }} for ${{ inputs.label }}."
         python3 "${{ github.action_path }}/git-diff-todos.py" --parsable-output \
           -o ${{ inputs.base_ref }} -n ${{ inputs.head_ref }} -l "${{ inputs.label }}" 
