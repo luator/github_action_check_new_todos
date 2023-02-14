@@ -1,6 +1,7 @@
-name: "Check New TODOs"
-description: "Parse a git diff for added or modified TODOs."
-author: "Felix Widmaier (@luator)"
+name: "New TODOs"
+description: "Parse a git diff for added or modified TODOs (or other keywords)."
+author: "Felix Kloss (@luator)"
+
 inputs:
     label:
         description: "The 'TODO' label that is searched for."
@@ -14,10 +15,16 @@ inputs:
         description: "The head branch for the diff."
         required: true
         default: "HEAD"
+
 runs:
-    using: "docker"
-    image: "Dockerfile"
-    args:
-        - ${{ inputs.label }}
-        - ${{ inputs.base_ref }}
-        - ${{ inputs.head_ref }}
+  using: 'composite'
+  steps:
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'  
+    - name: Install Dependencies
+      run: pip install -r requirements.txt
+      shell: bash
+    - name: Run git-diff-todos
+      run:
+        ./entrypoint.sh "${{ inputs.label }}" "${{ inputs.base_ref }}" "${{ inputs.head_ref }}"
