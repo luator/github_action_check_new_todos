@@ -19,9 +19,9 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Fetch base branch (needed for diff)
+    - name: Fetch all branches (needed for diff)
       shell: bash
-      run: git fetch origin ${{ inputs.base_ref }}
+      run: git fetch origin
 
     - name: Setup Python
       uses: actions/setup-python@v4
