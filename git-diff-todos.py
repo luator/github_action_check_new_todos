@@ -1,7 +1,13 @@
 #!/usr/bin/python3
-"""Parse git diff for added TODOs and print them nicely."""
+"""Parse git diff for added TODOs and print them nicely.
+
+Checks the diff for modified lines that contain a "TODO" label (or other keyword).
+Note that this will also detect modified lines that already contained the label (not
+only lines where it is newly added), so there will be some false positives.
+"""
 import argparse
 import collections
+import logging
 import re
 import sys
 import typing as t
@@ -10,17 +16,39 @@ import git  # pip install gitpython
 
 
 class ParseError(RuntimeError):
-    pass
+    """Indicates that parsing a line of the git diff output failed."""
 
 
 def any_in(a: t.Iterable[str], b: str) -> bool:
-    """Checks if 'a in b' is true for any element of a."""
+    """Check if 'a in b' is true for any element of a."""
     return any(x in b for x in a)
 
 
 def parse_diff(
     diff: git.DiffIndex, labels: t.Iterable[str]
 ) -> t.DefaultDict[str, t.Dict[int, str]]:
+    """Search a diff for modified lines that contain one of the labels.
+
+    Args:
+        diff:  The diff.
+        labels:  List of labels that are searched for.
+
+    Returns:
+        Dictionary structure containing the modified files/lines that now contain one of
+        the labels.  The structure is ``result[file][line_number] = line_text``, e.g.:
+
+        .. code-block::
+
+            {
+                "foo.py": {
+                    5: "# TODO: frobnicate more",
+                    42: "foo = 3  # FIXME better variable name",
+                },
+                "bar.txt": {
+                    13: "Lorem Ipsum TODO"
+                }
+            }
+    """
     matches: t.DefaultDict[str, t.Dict[int, str]] = collections.defaultdict(dict)
 
     for file_diff in diff:
@@ -45,15 +73,16 @@ def parse_diff(
                 if not match:
                     msg = f"Failed to extract line number from '{line}'"
                     raise ParseError(msg)
-                else:
-                    # Start with offset of -1 because the extracted number refers
-                    # to the line following this one.
-                    line_num = int(match.group(2)) - 1
+
+                # Start with offset of -1 because the extracted number refers
+                # to the line following this one.
+                line_num = int(match.group(2)) - 1
 
     return matches
 
 
-def main():
+def main() -> int:
+    """Check git diff for new TODOs."""
     arg_parser = argparse.ArgumentParser(description=__doc__)
     arg_parser.add_argument(
         "--repo",
@@ -88,7 +117,17 @@ def main():
         action="store_true",
         help="Produce output that is easier to parse by another script.",
     )
+    arg_parser.add_argument(
+        "--verbose", "-v", action="store_true", help="Enable debug output"
+    )
     args = arg_parser.parse_args()
+
+    logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO)
+
+    logging.debug("Repository: %s", args.repo)
+    logging.debug("Old commit: %s", args.old)
+    logging.debug("New commit: %s", args.new)
+    logging.debug("Labels: %s", args.label)
 
     repo = git.Repo(args.repo)
     commit = repo.commit(args.old)
