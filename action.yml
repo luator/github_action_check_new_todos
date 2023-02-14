@@ -20,6 +20,7 @@ runs:
   using: 'composite'
   steps:
     - name: Fetch base branch (needed for diff)
+      shell: bash
       run: git fetch origin ${{ inputs.base_ref }}
 
     - name: Setup Python
@@ -28,8 +29,8 @@ runs:
         python-version: '3.10'  
 
     - name: Install Dependencies
-      run: pip install -r requirements.txt
       shell: bash
+      run: pip install -r requirements.txt
 
     - name: Add Matcher
       shell: bash
@@ -37,6 +38,7 @@ runs:
         echo "::add-matcher::${{ github.action_path }}/git-diff-todos-problem-matcher.json"
 
     - name: Run git-diff-todos
+      shell: bash
       run: |
         echo "Parse diff ${{ inputs.base_ref }}..${{ inputs.head_ref }} for ${{ inputs.label }}."
         echo "-----------------------------------------------------------"
