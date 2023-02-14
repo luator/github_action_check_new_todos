@@ -1,6 +1,7 @@
-name: "Check New TODOs"
-description: "Parse a git diff for added or modified TODOs."
-author: "Felix Widmaier (@luator)"
+name: "New TODOs"
+description: "Parse a git diff for added or modified TODOs (or other keywords)."
+author: "Felix Kloss (@luator)"
+
 inputs:
     label:
         description: "The 'TODO' label that is searched for."
@@ -14,10 +15,31 @@ inputs:
         description: "The head branch for the diff."
         required: true
         default: "HEAD"
+
 runs:
-    using: "docker"
-    image: "Dockerfile"
-    args:
-        - ${{ inputs.label }}
-        - ${{ inputs.base_ref }}
-        - ${{ inputs.head_ref }}
+  using: 'composite'
+  steps:
+    - name: Fetch all branches (needed for diff)
+      shell: bash
+      run: git fetch origin
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'  
+
+    - name: Install Dependencies
+      shell: bash
+      run: pip install -r "${{ github.action_path }}/requirements.txt"
+
+    - name: Add Matcher
+      shell: bash
+      run: |
+        echo "::add-matcher::${{ github.action_path }}/git-diff-todos-problem-matcher.json"
+
+    - name: Run git-diff-todos
+      shell: bash
+      run: |
+        echo "::notice::Parse diff ${{ inputs.base_ref }}..${{ inputs.head_ref }} for ${{ inputs.label }}."
+        python3 "${{ github.action_path }}/git-diff-todos.py" --parsable-output \
+          -o ${{ inputs.base_ref }} -n ${{ inputs.head_ref }} -l "${{ inputs.label }}" 
