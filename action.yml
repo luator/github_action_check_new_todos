@@ -42,5 +42,5 @@ runs:
       run: |
         echo "Parse diff ${{ inputs.base_ref }}..${{ inputs.head_ref }} for ${{ inputs.label }}."
         echo "-----------------------------------------------------------"
-        python3 /git-diff-todos.py --parsable-output \
+        python3 "${{ github.action_path }}/git-diff-todos.py" --parsable-output \
           -o ${{ inputs.base_ref }} -n ${{ inputs.head_ref }} -l "${{ inputs.label }}" 
